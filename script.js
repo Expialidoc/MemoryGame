@@ -1,7 +1,8 @@
-//const gameContainer = document.getElementById("game");
 const gameContainer = document.querySelector("#game");
-const results = document.querySelector('.results');
+const ticks = document.querySelector('#timer');
 const startGameBtn = document.querySelector(".startGameBtn");
+const pauseGameBtn = document.querySelector(".pauseGameBtn");
+pauseGameBtn.disabled = true;
 
 const COLORS = [
   "red",
@@ -16,60 +17,84 @@ const COLORS = [
   "purple"
 ];
 
-let sec = 10, counter = null, numClicks = 0;
+let sec = 20, counter = null, numClicks = 0, numMatches = 0;
+let paused = false; // is the timer paused?
+let timer_current; // time left on the clock when paused
 
-startGameBtn.addEventListener('click', start);                                       //startGame.removeEventListener('click', handleCardClick)
-
+startGameBtn.addEventListener('click', start);   
 function start() {
    if (counter !== null) {
        clearTimeout(counter);
        counter = null;
-       sec = 10;
-       document.querySelector('.startGameBtn').value = 'Start';
-       resetGame();
-
-   } else {
-        startGame();
-        timer();
-        document.querySelector('.startGameBtn').value = 'Reset';
+       sec = 20;
+       numClicks = 0; numMatches = 0;
+       pauseGameBtn.disabled = false;
+    document.querySelector('#game').innerHTML = ''; //The fastest method to remove children!!!
+    document.querySelector('.startGameBtn').value = 'Reset';
+    ticks.textContent = '';
+        if (document.querySelector('.score') !== null) {
+            document.querySelector('.score').remove();
+            document.querySelector('.startGameBtn').value = 'Reset';
+          }
+            startGame();
+            timer();
+        } else {
+            pauseGameBtn.disabled = false;
+            startGame();
+            timer();
+            document.querySelector('.startGameBtn').value = 'Reset';
   }
 }
 
 function timer() {
   counter = setTimeout(function () {
     sec = sec - .1;
-    currTime = sec.toFixed(1);
+    currTime = sec.toFixed(1); timer_current = currTime;
     document.getElementById("timer").innerHTML = currTime;
     timer();
   }, 100);
   if (sec <= 0) {
     clearTimeout(counter);
-    document.querySelector('#timer').textContent = ' You finished!';
+    ticks.textContent = ' You finished!';
     const Score = document.createElement("p");
     Score.className = 'score';
-    Score.textContent = `Your score is: ${numClicks} clicked pairs`;
-    results.append(Score);
-
+        if(numMatches ===1){
+            Score.textContent = `Your score is: ${numMatches} match out of ${numClicks} clicked pairs`;
+        }else{
+    Score.textContent = `Your score is: ${numMatches} matches out of ${numClicks} clicked pairs`;
+        }
+    ticks.append(Score);
+                               
     gameOver();
-
   }
 }
 
-function resetGame() {
-  if (document.querySelector('#game') !== null) {
-    document.querySelector('#game').innerHTML = ''; //The fastest method to remove children!!!
-    document.querySelector('#timer').textContent = '';
-    document.querySelector('.score').remove();
-    document.querySelector('.startGameBtn').value = 'Start';
-    numClicks = 0;
-  }
+let isPaused = false;
+pauseGameBtn.addEventListener('click', pauseGame);
 
+function pauseGame(){
+        if(!isPaused){
+    clearTimeout(counter);
+    document.querySelector('.pauseGameBtn').value = 'Resume';
+    gameContainer.style.pointerEvents = "none"; //prevent clicks on cards
+    startGameBtn.removeEventListener('click', start); // prevent restart
+    isPaused = true;
+        }else{
+            document.querySelector('.pauseGameBtn').value = 'Pause';
+            gameContainer.style.pointerEvents = "auto"; // Allow clicks on cards
+            startGameBtn.addEventListener('click', start); // enable restart
+            isPaused = false;
+            sec = timer_current;
+            timer();
+        }            
 }
 
 function gameOver() {
   if (document.querySelector('#game') !== null) {
     document.querySelector('#game').innerHTML = '';//The fastest method to remove children!!!
-  }
+    document.querySelector('.startGameBtn').value = 'Start';
+    pauseGameBtn.disabled = true;
+  }  
 }
 
 // here is a helper function to shuffle an array
@@ -89,7 +114,6 @@ function shuffle(array) {
     array[lenArr] = array[index];
     array[index] = temp;
   }
-  console.log(array);
   return array;
 }
 let shuffledColors = shuffle(COLORS);
@@ -135,6 +159,7 @@ function handleCardClick(e) {
 function checkForMatch() {
   if (firstCard.className === secondCard.className) {
     disableCards();
+    numMatches ++;
     return;
   }
 
@@ -163,12 +188,12 @@ function resetBoard() {
   [firstCard, secondCard] = [null, null];
 }
 
-
 // when the DOM loads
 function startGame() {
   let shuffledColors = shuffle(COLORS);
 
   createDivsForColors(shuffledColors);
 }
+
 
 
